@@ -1,21 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
-using UnityEngine;
 using TMPro;
-using UnityEngine.UI;
-using System;
+using UnityEngine;
 
-public class DrawCartesianPlane : MonoBehaviour
+public class CartesianPlane : MonoBehaviour
 {
-    [SerializeField]
-    private int numXAxisUnits;
-
-    [SerializeField]
-    private string xAxisLabel;
-
-    [SerializeField]
-    private string yAxisLabel;
 
     [SerializeField]
     private float axisWidth;
@@ -27,6 +16,9 @@ public class DrawCartesianPlane : MonoBehaviour
     private Color colorYAxis;
 
     [SerializeField]
+    private int numPosAxisUnits;
+
+    [SerializeField]
     private float axisTickWidth;
 
     [SerializeField]
@@ -34,10 +26,10 @@ public class DrawCartesianPlane : MonoBehaviour
 
     private GameObject canvasObject;
 
-
     // Start is called before the first frame update
     void Start()
     {
+
         //get center of screen and set vector
         float screenWidth = Screen.width;
         float screenHeight = Screen.height;
@@ -49,9 +41,8 @@ public class DrawCartesianPlane : MonoBehaviour
 
         canvasObject = new GameObject("Canvas");
         canvasObject.AddComponent<Canvas>();
-        canvasObject.AddComponent<CanvasScaler>();
-        canvasObject.AddComponent<GraphicRaycaster>();
 
+        /*
         //draw x axis
         lr = DrawLine("xAxisObject", startPoint, endPoint, colorXAxis, axisWidth);
         lr.transform.parent = transform;
@@ -61,39 +52,18 @@ public class DrawCartesianPlane : MonoBehaviour
         endPoint = new Vector2(center.x, screenHeight);
         lr = DrawLine("yAxisObject", startPoint, endPoint, colorYAxis, axisWidth);
         lr.transform.parent = transform;
+        */
+
 
         //draw unit ticks on x and y axis using only two line renderers each having multiple points
-        
-        lr = DrawAxisUnits("xAxisUnitTicks", numXAxisUnits, colorXAxis, center, screenWidth, screenHeight,axisTickWidth,20.0f,"x");
+
+        lr = DrawAxisUnits("xAxisUnitTicks", numPosAxisUnits, colorXAxis, center, screenWidth, screenHeight, axisTickWidth, 20.0f, "x");
         lr.transform.parent = transform;
 
-        lr = DrawAxisUnits("yAxisUnitTicks", numXAxisUnits, colorYAxis, center, screenWidth, screenHeight, axisTickWidth, 20.0f, "y");
+        lr = DrawAxisUnits("yAxisUnitTicks", numPosAxisUnits, colorYAxis, center, screenWidth, screenHeight, axisTickWidth, 20.0f, "y");
         lr.transform.parent = transform;
 
     }
-
-    private void PlaceText(string text, Vector2 position, GameObject canvasObject)
-    {
-        
-        GameObject tmProObject = new GameObject(text);
-        TextMeshPro tm = tmProObject.AddComponent<TextMeshPro>();
-        tmProObject.transform.parent = canvasObject.transform;
-        canvasObject.transform.parent = this.transform;
-        tm.text = text;
-        tm.fontSize = unitFontSize;
-        tm.alignment = TextAlignmentOptions.Center;
-
-        RectTransform rt = tm.GetComponent<RectTransform>();
-        rt.sizeDelta = new Vector2(2f, 0f);
-
-        Vector3 pointScreen = new Vector3(position.x, position.y-10.0f);
-        Vector3 pointWorld = Camera.main.ScreenToWorldPoint(pointScreen);
-        pointWorld.z = 0f;
-
-        tm.transform.position = pointWorld;
-
-    }
-
 
     private LineRenderer DrawLine(string name, Vector2 startPoint, Vector2 endPoint, Color color, float lineWidth)
     {
@@ -119,53 +89,46 @@ public class DrawCartesianPlane : MonoBehaviour
         return line;
     }
 
-    private LineRenderer DrawAxisUnits(string name, int numUnits, Color color, Vector3 center, 
-        float screenWidth, float screenHeight, float lineWidth, float unitTickLineLength, string axis)
+    private LineRenderer DrawAxisUnits(string name, int numPosUnits, Color color, Vector3 center,
+        float screenWidth, float screenHeight, float lineWidth, float tickerHeight, string axis)
     {
         GameObject gameObject = new GameObject(name);
 
         LineRenderer line = gameObject.AddComponent<LineRenderer>();
 
-        //Vector3 startWorldPoint = Camera.main.ScreenToWorldPoint(new Vector3(0f, center.y));
-        //startWorldPoint.z = 0f;
-        //Vector3 endWorldPoint = Camera.main.ScreenToWorldPoint(new Vector3(screenWidth, center.y));
-        //endWorldPoint.z = 0f;
-
-        int numUnitsNeeded = (numUnits + (3 * numUnits) + 4) * 2;
+        line.positionCount = (numPosUnits + (3 * numPosUnits) + 4) * 2;
         line.startWidth = line.endWidth = lineWidth;
-        line.positionCount = numUnitsNeeded;
 
         line.material = new Material(Shader.Find("Unlit/Color"));
-        line.material.color = color;      
+        line.material.color = color;
 
-        //line.SetPosition(0, startWorldPoint);
-        float stepLength = screenWidth / 2.0f / numUnits;
-        float tickerHalf = unitTickLineLength / 2.0f;
+        float distanceBetweenTickers = screenWidth / 2.0f / numPosUnits;
+        float tickerHalfHeight = tickerHeight / 2.0f;
 
-        int unitCount = (numUnits * -1);
+        int unitCount = (numPosUnits * -1);
         //draw axis units 
         if (axis == "x")
         {
             float curX = 0f;
             float curY;
 
-            for (int i = 0; i < numUnitsNeeded; i++)
+            for (int i = 0; i < line.positionCount; i++)
             {
                 //start on x axis at left most point of screen
-                SetLinePosition(curX, center.y, line,i);
+                SetLinePosition(curX, center.y, line, i);
 
                 i++;
 
                 //go up 1/2 unitTickLineLength length (above x axis)
-                curY = center.y + tickerHalf;
+                curY = center.y + tickerHalfHeight;
                 SetLinePosition(curX, curY, line, i);
 
                 i++;
 
                 //go down 1 unitTickLineLength (below x axis)
-                curY = center.y - tickerHalf;
+                curY = center.y - tickerHalfHeight;
                 SetLinePosition(curX, curY, line, i);
-                PlaceText(unitCount.ToString(), new Vector2(curX, curY),canvasObject);
+                PlaceText(unitCount.ToString(), new Vector2(curX, curY), canvasObject);
                 unitCount++;
 
                 //this is where we want to draw the unit desgination like 1, 2, 10 etc
@@ -178,7 +141,7 @@ public class DrawCartesianPlane : MonoBehaviour
                 SetLinePosition(curX, curY, line, i);
 
                 //move to the right by stepLength distance
-                curX += stepLength;
+                curX += distanceBetweenTickers;
                 Debug.Log(i);
             }
         }
@@ -191,7 +154,7 @@ public class DrawCartesianPlane : MonoBehaviour
             // This will also handle the case where a screen is longer in the y axis
             curY = center.y - (screenWidth / 2.0f);
 
-            for (int i = 0; i < numUnitsNeeded; i++)
+            for (int i = 0; i < line.positionCount; i++)
             {
                 //start on y axis at bottom of screen
                 SetLinePosition(center.x, curY, line, i);
@@ -199,13 +162,13 @@ public class DrawCartesianPlane : MonoBehaviour
                 i++;
 
                 //go left 1/2 unitTickLineLength length (left of y axis)
-                curX = center.x - tickerHalf;
+                curX = center.x - tickerHalfHeight;
                 SetLinePosition(curX, curY, line, i);
 
                 i++;
 
                 //go right 1 unitTickLineLength (right of y axis)
-                curX = center.x + tickerHalf;
+                curX = center.x + tickerHalfHeight;
                 SetLinePosition(curX, curY, line, i);
 
                 i++;
@@ -215,12 +178,34 @@ public class DrawCartesianPlane : MonoBehaviour
                 SetLinePosition(curX, curY, line, i);
 
                 //move to the right by stepLength distance
-                curY += stepLength;
+                curY += distanceBetweenTickers;
                 //Debug.Log(i);
             }
         }
-            
+
         return line;
+    }
+
+    private void PlaceText(string text, Vector2 position, GameObject canvasObject)
+    {
+
+        GameObject tmProObject = new GameObject(text);
+        TextMeshPro tm = tmProObject.AddComponent<TextMeshPro>();
+        tmProObject.transform.parent = canvasObject.transform;
+        canvasObject.transform.parent = this.transform;
+        tm.text = text;
+        tm.fontSize = unitFontSize;
+        tm.alignment = TextAlignmentOptions.Center;
+
+        RectTransform rt = tm.GetComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(2f, 0f);
+
+        Vector3 pointScreen = new Vector3(position.x, position.y - 10.0f);
+        Vector3 pointWorld = Camera.main.ScreenToWorldPoint(pointScreen);
+        pointWorld.z = 0f;
+
+        tm.transform.position = pointWorld;
+
     }
 
     private void SetLinePosition(float x, float y, LineRenderer line, int index)
@@ -231,14 +216,10 @@ public class DrawCartesianPlane : MonoBehaviour
         line.SetPosition(index, pointWorld);
     }
 
-    private void DrawUnit()
-    {
-
-    }
 
     // Update is called once per frame
     void Update()
     {
-
+        
     }
 }
